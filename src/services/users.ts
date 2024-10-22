@@ -2,11 +2,14 @@ import { api } from "./api";
 
 export enum RoleUser {
   ADMIN = "admin",
+  USER = "user",
   AUTHOR = "author",
+  EVENT_MANAGER = "event_manager",
 }
 export enum RoleUserSelect {
   USER = "user",
   AUTHOR = "author",
+  EVENT_MANAGER = "event_manager",
 }
 export const MapRoleUser: {
   [key: string]: string;
@@ -14,6 +17,7 @@ export const MapRoleUser: {
   [RoleUser.ADMIN]: "Administrador",
   [RoleUser.AUTHOR]: "Autor",
   [RoleUserSelect.USER]: "Usuario",
+  [RoleUserSelect.EVENT_MANAGER]: "Gestor de Capacitaciones",
 };
 export interface Country {
   code: string

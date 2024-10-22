@@ -19,7 +19,28 @@ import StatiticsPage from '@/pages/Trainings/views/StatiticsPage'
 import SemestersPage from '@/pages/Semesters'
 import StogarePage from '@/pages/Storage'
 
+const PostPage = () => {
+  return (
+    <PostProvider>
+      <Posts />
+    </PostProvider>
+  )
+}
+
+const DashboardPage = () => {
+  return (
+    <div className='p-4 text-xl font-semibold'>Bienvenido al gestor de contenido.</div>
+  )
+}
+
 const routes = [
+  {
+    path: 'posts',
+    label: 'Posts',
+    redirectTo: '/posts',
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    component: PostPage,
+  },
   {
     path: 'usuarios',
     label: 'Usuarios',
@@ -45,35 +66,35 @@ const routes = [
     path: 'semestres',
     label: 'Semestres',
     redirectTo: '/semestres',
-    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: SemestersPage,
   },
   {
     path: 'escuelas',
     label: 'Escuelas',
     redirectTo: '/escuelas',
-    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: SchoolsPage,
   },
   {
     path: 'profesores',
     label: 'Profesores',
     redirectTo: '/profesores',
-    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: ProfessorsPage,
   },
   {
     path: 'competencias',
     label: 'Competencias',
     redirectTo: '/competencias',
-    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: CompetenciesPage,
   },
   {
     path: 'capacitaciones',
     label: 'Capacitaciones',
     redirectTo: '/capacitaciones',
-    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: TrainingsPage,
   },
   {
@@ -87,21 +108,21 @@ const routes = [
     path: 'capacitaciones-documento',
     label: 'Capacitaciones por Documento',
     redirectTo: '/capacitaciones-documento',
-    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: SearchByDocument,
   },
   {
     path: 'capacitaciones-reportes',
     label: 'Estadísticas de Capacitaciones',
     redirectTo: '/capacitaciones-reportes',
-    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: StatiticsPage,
   },
   {
     path: 'cloud',
     label: 'Cloud',
     redirectTo: '/cloud',
-    hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: StogarePage,
   },
 
@@ -123,16 +144,8 @@ export const RoutesApp = () => {
         {!!user && (<Route path='/' element={<DashboardLayout />}>
 
           <>
-            <Route index element={
-              <PostProvider>
-                <Posts />
-              </PostProvider>
-            } />
-            <Route path="posts" element={
-              <PostProvider>
-                <Posts />
-              </PostProvider>
-            } />
+            <Route index element={<DashboardPage />} />
+            <Route path="dashboard" element={<DashboardPage />} />
             {routes.map((route, index) => {
               if (!route.hasAccess(user!)) return null;
               return (

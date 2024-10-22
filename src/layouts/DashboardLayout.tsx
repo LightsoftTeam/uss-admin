@@ -9,10 +9,16 @@ import { RoleUser, User } from "@/services/users";
 
 const routes = [
     {
-        path: ['/', '/posts'],
+        path: ['/', '/dashboard'],
+        label: 'Dashboard',
+        redirectTo: '/dashboard',
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+    },
+    {
+        path: ['/posts'],
         label: 'Posts',
         redirectTo: '/posts',
-        hasAccess: (user: User) => !!user,
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
     },
     {
         path: ['/usuarios'],
@@ -42,43 +48,43 @@ const routes = [
         path: ['/semestres'],
         label: 'Semestres',
         redirectTo: '/semestres',
-        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     },
     {
         path: ['/escuelas'],
         label: 'Escuelas',
         redirectTo: '/escuelas',
-        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     },
     {
         path: ['/profesores'],
         label: 'Profesores',
         redirectTo: '/profesores',
-        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     },
     {
         path: ['/competencias'],
         label: 'Competencias',
         redirectTo: '/competencias',
-        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     },
     {
         path: ['/capacitaciones'],
         label: 'Capacitaciones',
         redirectTo: '/capacitaciones',
-        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     },
     {
         path: ['/capacitaciones-reportes'],
         label: 'Reportes Capacitaciones',
         redirectTo: '/capacitaciones-reportes',
-        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     },
     {
         path: ['/cloud'],
         label: 'Cloud',
         redirectTo: '/cloud',
-        hasAccess: (user: User) => user.role === RoleUser.ADMIN,
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     },
 ]
 interface ProtectedRouteProps {
