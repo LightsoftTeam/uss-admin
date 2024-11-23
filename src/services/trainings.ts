@@ -2,6 +2,7 @@ import { api } from "./api";
 import { Competency } from "./competencies";
 import { Professor } from "./professors";
 import { School } from "./schools";
+import { User } from "./users";
 export enum TrainingStatus {
   ACTIVE = "active",
   INACTIVE = "inactive",
@@ -56,60 +57,65 @@ export const MapTypeTraining: {
 };
 
 export interface Training {
-  competencyId:  string;
-  code:         string;
-  name:         string;
+  competencyId: string;
+  code: string;
+  name: string;
   organizer: "DDA" | School;
-  status:       TrainingStatus;
-  modality:     TrainingModality;
-  executions:   Execution[];
+  status: TrainingStatus;
+  modality: TrainingModality;
+  executions: Execution[];
   competency: Competency;
-  createdAt:    string;
+  createdAt: string;
   background?: string;
   signature?: string;
   issueDate?: string;
   type: TypeTraining;
-  id:           string;
+  id: string;
 }
 
 export enum AttendanceStatus {
-  PENDING = 'pending',
-  ATTENDED = 'attended',
+  PENDING = "pending",
+  ATTENDED = "attended",
 }
 export enum MapAttendanceStatus {
-  pending = 'Pendiente',
-  attended = 'Verificado',
+  pending = "Pendiente",
+  attended = "Verificado",
 }
 
 export interface Attendance {
-  id:            string;
+  id: string;
   participantId: string;
-  status:        string;
-  createdAt:     string;
+  status: string;
+  createdAt: string;
 }
 export interface Execution {
   from: string;
-  to:   string;
-  id:   string;
+  to: string;
+  id: string;
   place: string;
+  durationInMinutes: number;
   attendance: Attendance[];
 }
 export interface TrainingBodyRequest {
   competencyId: string;
-  code:       string;
-  name:       string;
-  organizer:  string;
-  description: string
-  capacity:   number;
-  status:     string;
-  modality:   string;
+  code: string;
+  name: string;
+  organizer: string;
+  description: string;
+  capacity: number;
+  status: string;
+  modality: string;
   semesterId: string;
-  type:       TypeTraining;
+  type: TypeTraining;
   certificateOrganizer: string;
   certificateBackgroundUrl?: string;
   certificateSignatureUrl?: string;
   certificateEmisionDate?: string;
   executions: Partial<Execution>[];
+  credentialBackgroundUrl?: string;
+  credentialTextToShare?: string;
+  credentialHelpText?: string;
+  credentialLogos?: string[];
 }
 
 export const getTrainings = async (): Promise<Training[]> => {
@@ -136,29 +142,51 @@ export const deleteTraining = async (id: string): Promise<void> => {
   await api.delete(`/training/${id}`);
 };
 
-
 export interface Participant {
-  id:               string;
-  foreignId:        string;
-  roles:             RoleInscription[];
+  id: string;
+  foreignId: string;
+  roles: RoleInscription[];
   attendanceStatus: AttendanceStatus;
-  certificates:      Certificate[];
-  professor:        Professor;
-  executions:       ParticipantExecution[];
+  certificates: Certificate[];
+  user: User;
+  executions: ParticipantExecution[];
 }
 export interface ParticipantExecution extends Execution {
   participantAttend: boolean;
 }
 
 export interface Certificate {
-  id:               string;
-  duration:         number;
-  emisionDate:      string;
+  id: string;
+  duration: number;
+  emisionDate: string;
   trainingFromDate: string;
-  trainingToDate:   string;
-  url:              string;
-  role:            RoleInscription;
+  trainingToDate: string;
+  url: string;
+  role: RoleInscription;
 }
+
+export interface ResourcesCredential {
+  bg: string;
+  band: string;
+}
+
+// {{url}}/api/app-configuration
+export const getResourcesCredential =
+  async (): Promise<ResourcesCredential> => {
+    const { data } = await api.get<ResourcesCredential>("/app-configuration");
+    return data;
+  };
+
+// {{url}}/api/app-configuration/:code
+export const updateResource = async (
+  code: "bg" | "band",
+  url: string
+): Promise<any> => {
+  const { data } = await api.patch(`/app-configuration/${code}`, {
+    value: url,
+  });
+  return data;
+};
 
 // {{url}}/api/training/:id/participants
 export const getParticipants = async (id: string): Promise<Participant[]> => {
@@ -167,9 +195,45 @@ export const getParticipants = async (id: string): Promise<Participant[]> => {
 };
 
 // {{url}}/api/training/participants/:participantId/complete
-export const completeStatusOfParticipant = async (participantId: string): Promise<Participant> => {
-  const { data } = await api.post(`/training/participants/${participantId}/complete`);
+export const completeStatusOfParticipant = async (
+  participantId: string
+): Promise<Participant> => {
+  const { data } = await api.post(
+    `/training/participants/${participantId}/complete`
+  );
   return data;
+};
+
+// {{url}}/api/training/:id/download-certificates
+export const downloadCertificates = async (id: string): Promise<void> => {
+  try {
+    const response = await api.get(`/training/${id}/download-certificates`, {
+      responseType: "blob", // Indicar que se espera un blob como respuesta
+    });
+
+    // Crear una URL para el blob
+    const url = window.URL.createObjectURL(new Blob([response.data]));
+
+    // Crear un enlace temporal para descargar el archivo
+    const link = document.createElement("a");
+    link.href = url;
+
+    // Extraer el nombre del archivo del encabezado "content-disposition"
+    const contentDisposition = response.headers["content-disposition"];
+    const fileName = contentDisposition
+      ? contentDisposition.split("filename=")[1].replace(/"/g, "") // Obtener el nombre del archivo y limpiar comillas dobles
+      : "certificates.zip"; // Nombre predeterminado si no se proporciona uno en la respuesta
+
+    link.setAttribute("download", fileName);
+    document.body.appendChild(link);
+    link.click();
+
+    // Limpiar el enlace y la URL del blob
+    link.parentNode?.removeChild(link);
+    window.URL.revokeObjectURL(url);
+  } catch (error) {
+    console.error("Error al descargar el archivo:", error);
+  }
 };
 
 export interface SingleTraining extends Training {
@@ -182,7 +246,7 @@ export interface TrainingByDocument {
 
 // {{url}}/api/training/by-document/:documentType/:documentNumber
 export const getTrainingsByDocument = async (
-  documentType: string = 'dni',
+  documentType: string = "dni",
   documentNumber: number
 ): Promise<TrainingByDocument> => {
   const { data } = await api.get<TrainingByDocument>(

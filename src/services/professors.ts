@@ -6,6 +6,12 @@ export enum ProfessorDocumentType {
   FOREIGNER_CARD = "foreigner_card",
 }
 
+export const MapProfessorDocumentType: Record<ProfessorDocumentType, string> = {
+  [ProfessorDocumentType.DNI]: "DNI",
+  [ProfessorDocumentType.PASSPORT]: "Pasaporte",
+  [ProfessorDocumentType.FOREIGNER_CARD]: "Carnet de extranjería",
+};
+
 export enum ProfessorEmploymentType {
   FULL_TIME = "full_time",
   PART_TIME = "part_time",

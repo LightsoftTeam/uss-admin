@@ -10,21 +10,24 @@ import { Input } from "@/components/ui/input";
 import { SchoolStore } from "@/pages/Schools/store/SchoolStore";
 import Select from 'react-select';
 import { DialogDescription } from "@radix-ui/react-dialog";
-import { PlusIcon, Trash2Icon } from "lucide-react";
+import { Copy, PlusIcon, Trash2Icon } from "lucide-react";
 import { DataTableParticipants } from "./participant/table";
 import { columns } from "./participant/column";
 import { uploadFile } from "@/services/posts";
 import { SemesterStore } from "@/pages/Semesters/store/SemesterStore";
+import { getQrLink } from "@/lib/utils";
 
 
 function ModalTraining() {
-    const { setOpen, action, loading, setLoading, open, trainingSelected, participantsDraft, competencies, setTrainingSelected, getParticipantsByTraining, crtTraining, updTraining, delTraining, searchParticipants } = TrainingStore()
+    const { setOpen, action, loading, setLoading, open, trainingSelected, participantsDraft, competencies, setTrainingSelected, getParticipantsByTraining, crtTraining, updTraining, delTraining, searchParticipants, downloadCertificates } = TrainingStore()
     const { semesters } = SemesterStore()
     const { schools } = SchoolStore()
 
 
     const title = () => {
         switch (action) {
+            case 'view':
+                return 'Compartir Qr para Marcar Asistencia'
             case 'edit':
                 return 'Editar Certificación'
             case 'delete':
@@ -79,7 +82,7 @@ function ModalTraining() {
         }
     }, [])
 
-    const handleOnChangeImageInput = async (e: React.ChangeEvent<HTMLInputElement>, path: 'certificateBackgroundUrl' | 'certificateSignatureUrl') => {
+    const handleOnChangeImageInput = async (e: React.ChangeEvent<HTMLInputElement>, path: 'certificateBackgroundUrl' | 'certificateSignatureUrl' | 'credentialBackgroundUrl') => {
         const file = e.target.files![0];
         try {
             setLoading(true);
@@ -102,9 +105,14 @@ function ModalTraining() {
                 })
                 return
             }
+            const executions = data.executions.map((execution) => ({
+                ...execution,
+                durationInMinutes: Number(execution.durationInMinutes)
+            }))
             return await crtTraining({
                 ...data,
                 status: TrainingStatus.ACTIVE,
+                executions,
             })
         }
         if (action === 'edit') {
@@ -137,12 +145,54 @@ function ModalTraining() {
                     <form onSubmit={onSubmit} encType='multipart/form-data'>
                         <pre className="text-xs hidden">
                             <code>
-                                {JSON.stringify({ form: watch(), action }, null, 4)}
+                                {JSON.stringify({
+                                    form: watch(), action,
+                                    // errors
+                                }, null, 4)}
                             </code>
                         </pre>
+                        {(action === 'view') && (
+                            <div className="flex flex-col gap-3">
+                                <div className="flex flex-row gap-1 items-center">
+                                    <a
+                                        href={`https://observatorio.uss.edu.pe/marcar-asistencia/${trainingSelected?.id}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-blue-500 hover:underline"
+                                    >
+                                        Copiar Url para Marcar Asistencia
+                                    </a>
+                                    <Button
+                                        variant="outline"
+                                        className="w-5 h-5 p-0 m-0"
+                                        onClick={() => {
+                                            // copiar al portapapeles
+                                            navigator.clipboard.writeText(`https://observatorio.uss.edu.pe/marcar-asistencia/${trainingSelected?.id}`);
+                                        }}
+                                    >
+                                        <Copy className="w-3 h-3" />
+                                    </Button>
+                                </div>
+                                <div className="flex justify-between items-center gap-2">
+                                    <img src={getQrLink(
+                                        `https://observatorio.uss.edu.pe/marcar-asistencia/${trainingSelected?.id}`
+                                    )} alt="" />
+                                </div>
+                            </div>
+                        )}
                         {(action === 'list') && (
                             <div className="flex flex-col gap-3">
                                 {loading && <p className="text-base font-medium text-gray-500 text-center py-5">Buscando inscripciones...</p>}
+                                {/* Descargar certificados */}
+                                <Button
+                                    disabled={loading}
+                                    onClick={() => {
+                                        if (!trainingSelected) return
+                                        downloadCertificates()
+                                    }}
+                                    className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                                    Descargar Certificados
+                                </Button>
                                 {participantsDraft && <>
                                     <div className="flex justify-between items-center gap-2">
                                         <Input
@@ -184,10 +234,10 @@ function ModalTraining() {
                                             },
                                         })}
                                         value={watch('semesterId') as any &&
-                                            schools.find((school) => school.id === watch('semesterId')) &&
+                                            semesters.find((semester) => semester.id === watch('semesterId')) &&
                                         {
                                             value: watch('semesterId'),
-                                            label: schools.find((school) => school.id === watch('semesterId'))?.name
+                                            label: semesters.find((semester) => semester.id === watch('semesterId'))?.name
                                         }
                                         }
                                         isDisabled={loading}
@@ -347,6 +397,7 @@ function ModalTraining() {
                                                         from: '',
                                                         to: '',
                                                         place: '',
+                                                        durationInMinutes: 0,
                                                     }
                                                 ])
                                             }}
@@ -408,6 +459,24 @@ function ModalTraining() {
                                                 />
                                                 {errors?.executions?.[index]?.place &&
                                                     <span className="text-red-600 text-xs">{errors?.executions?.[index]?.place?.message}</span>
+                                                }
+                                            </div>
+                                            <div className="flex flex-col gap-1">
+                                                <Input
+                                                    id={`durationInMinutes-${index}`}
+                                                    disabled={loading}
+                                                    className="col-span-3"
+                                                    type="number"
+                                                    placeholder="Duración en horas"
+                                                    {...register(`executions.${index}.durationInMinutes`, {
+                                                        required: {
+                                                            value: true,
+                                                            message: 'Duración en horas es requerido.'
+                                                        }
+                                                    })}
+                                                />
+                                                {errors?.executions?.[index]?.durationInMinutes &&
+                                                    <span className="text-red-600 text-xs">{errors?.executions?.[index]?.durationInMinutes?.message}</span>
                                                 }
                                             </div>
                                             {/* Eliminar fila */}
@@ -618,6 +687,9 @@ function ModalTraining() {
                                         {errors.certificateBackgroundUrl &&
                                             <span className="text-red-600 text-xs">{errors.certificateBackgroundUrl.message}</span>
                                         }
+                                        {watch('certificateBackgroundUrl') && (
+                                            <img src={watch('certificateBackgroundUrl')} alt="background" className="h-24 w-24 object-contain" />
+                                        )}
                                     </div>
                                     <div className="flex flex-col items-start gap-2">
                                         <Label htmlFor="signature" className="text-right">
@@ -640,6 +712,9 @@ function ModalTraining() {
                                         {errors.certificateSignatureUrl &&
                                             <span className="text-red-600 text-xs">{errors.certificateSignatureUrl.message}</span>
                                         }
+                                        {watch('certificateSignatureUrl') && (
+                                            <img src={watch('certificateSignatureUrl')} alt="background" className="h-24 w-24 object-contain" />
+                                        )}
                                     </div>
                                     <div className="flex flex-col items-start gap-2">
                                         <Label htmlFor="date" className="text-right">
@@ -661,6 +736,120 @@ function ModalTraining() {
                                         {errors.certificateEmisionDate &&
                                             <span className="text-red-600 text-xs">{errors.certificateEmisionDate.message}</span>
                                         }
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col gap-2 border border-slate-600 p-4 mt-6 rounded-lg relative">
+                                    <span className="absolute left-3 -top-2 text-slate-600 bg-white px-2 text-xs">Recursos para Credencial a Compartir</span>
+
+                                    <div className="flex flex-col items-start gap-2">
+                                        <Label htmlFor="credentialTextToShare" className="text-right">
+                                            Texto en publicación
+                                        </Label>
+                                        <Input
+                                            id="credentialTextToShare"
+                                            disabled={loading}
+                                            className="col-span-3"
+                                            placeholder="Texto en publicación"
+                                            {...register('credentialTextToShare', {
+                                                required: false,
+                                                maxLength: {
+                                                    value: 180,
+                                                    message: 'Texto en publicación debe tener 180 caracteres como máximo.'
+                                                }
+                                            })}
+                                        />
+                                        {errors.credentialTextToShare &&
+                                            <span className="text-red-600 text-xs">{errors.credentialTextToShare.message}</span>
+                                        }
+                                    </div>
+
+                                    <div className="flex flex-col items-start gap-2">
+                                        <Label htmlFor="credentialBackgroundUrl" className="text-right">
+                                            Fondo de la Credencial
+                                        </Label>
+                                        <Input disabled={loading} id="credentialBackgroundUrl" type="file" name="media" onChange={
+                                            (e) => handleOnChangeImageInput(e, 'credentialBackgroundUrl')
+                                        } />
+                                        <Input
+                                            disabled={loading}
+                                            value={watch('credentialBackgroundUrl') || ''}
+                                            className="hidden"
+                                            {...register('credentialBackgroundUrl', {
+                                                required: false
+                                            })}
+                                        />
+                                        {errors.credentialBackgroundUrl &&
+                                            <span className="text-red-600 text-xs">{errors.credentialBackgroundUrl.message}</span>
+                                        }
+                                        {watch('credentialBackgroundUrl') && (
+                                            <img src={watch('credentialBackgroundUrl')} alt="background" className="h-24 w-24 object-contain" />
+                                        )}
+                                    </div>
+
+                                    <div className="flex flex-col items-start gap-2">
+                                        <Label htmlFor="credentialHelpText" className="text-right">
+                                            Texto en credencial
+                                        </Label>
+                                        <Input
+                                            id="credentialHelpText"
+                                            disabled={loading}
+                                            className="col-span-3"
+                                            placeholder="Texto en credencial"
+                                            {...register('credentialHelpText', {
+                                                required: false,
+                                                maxLength: {
+                                                    value: 80,
+                                                    message: 'Texto en credencial debe tener 80 caracteres como máximo.'
+                                                }
+                                            })}
+                                        />
+                                        {errors.credentialHelpText &&
+                                            <span className="text-red-600 text-xs">{errors.credentialHelpText.message}</span>
+                                        }
+                                    </div>
+
+                                    <div className="flex flex-col items-start gap-2">
+                                        <Label htmlFor="credentialLogos" className="text-right">
+                                            Logos (máx 4)
+                                        </Label>
+                                        <Input
+                                            id="credentialLogos"
+                                            disabled={loading}
+                                            className="col-span-3"
+                                            type="file"
+                                            multiple
+                                            accept="image/png, image/jpeg"
+                                            onChange={async (e) => {
+                                                const files = e.target.files;
+                                                if (!files) return;
+                                                if (files.length > 4) {
+                                                    toast.error('Sólo se permiten 4 logos');
+                                                    return;
+                                                }
+                                                try {
+                                                    setLoading(true);
+                                                    const urls = await Promise.all(Array.from(files).map(async (file) => {
+                                                        const { url } = await uploadFile(file);
+                                                        return url;
+                                                    }))
+                                                    setValue('credentialLogos', urls)
+                                                } catch (error) {
+                                                    toast.error('Ocurrió un error inesperado, intente nuevamente');
+                                                    // limpiar el input
+                                                    e.target.value = '';
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            }}
+                                        />
+                                        <div className="flex gap-2">
+                                            {watch('credentialLogos')?.map((url, index) => (
+                                                <div key={index} className="flex  gap-2 items-center">
+                                                    <img src={url} alt="" className="h-12 w-12 object-contain" />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -9,9 +9,20 @@ import { toast } from "sonner";
 import { uploadFile } from "@/services/posts";
 import { UserStore } from "../store/UserStore";
 import { Input } from "@/components/ui/input";
+import { MapProfessorEmploymentType, ProfessorDocumentType, ProfessorEmploymentType } from "@/services/professors";
+import { Loader } from "lucide-react";
+import { SchoolStore } from "@/pages/Schools/store/SchoolStore";
 
 function ModalUser() {
     const { setOpen, action, loading, open, userSelected, setUserSelected, crtUser, updUser, setLoading, delUser, countries } = UserStore()
+
+    const schools = SchoolStore(state => state.schools)
+    const getListSchools = SchoolStore(state => state.getData)
+    const loadSchools = SchoolStore(state => state.loading)
+
+    useEffect(() => {
+        getListSchools()
+    }, [])
 
     const title = () => {
         switch (action) {
@@ -40,7 +51,7 @@ function ModalUser() {
             image: '',
             name: '',
             password: '',
-            role: 'author',
+            role: 'user',
         }
     })
     useEffect(() => {
@@ -50,7 +61,8 @@ function ModalUser() {
         if (action === 'edit') {
             if (!userSelected) return
             reset({
-                ...userSelected
+                ...userSelected,
+                documentType: userSelected.documentType || undefined,
             })
         }
         return () => {
@@ -89,6 +101,13 @@ function ModalUser() {
             toast.success('Usuario eliminado correctamente')
         }
     })
+
+    useEffect(() => {
+        setValue('documentType', watch('role') === 'professor' ? ProfessorDocumentType.DNI : undefined)
+        return () => {
+            setValue('documentType', undefined)
+        }
+    }, [watch('role')])
     return (
         <Dialog open={open} onOpenChange={setOpen}>
             <DialogContent
@@ -150,7 +169,7 @@ function ModalUser() {
                                     placeholder="Password"
                                     {...register('password', {
                                         required: {
-                                            value: true,
+                                            value: action === 'create',
                                             message: 'Password es requerido.'
                                         },
                                     })}
@@ -247,6 +266,114 @@ function ModalUser() {
                                     <span className="text-red-600 text-xs">{errors.role.message}</span>
                                 }
                             </div>
+
+                            {/* Is Professor */}
+                            {watch('role') === 'professor' && (
+                                <>
+                                    <div className="grid w-full gap-1.5">
+                                        <Label>
+                                            Número de DNI
+                                        </Label>
+                                        <Input
+                                            type="text" placeholder="Ingresa Número de DNI"
+                                            disabled={loading}
+                                            {...register('documentNumber', {
+                                                required: {
+                                                    value: watch('role') === 'professor',
+                                                    message: 'Número de DNI requerido'
+                                                },
+                                                pattern: {
+                                                    value: /^[0-9]{8}$/,
+                                                    message: 'Número de DNI no válido'
+                                                },
+                                            })}
+                                        />
+                                        <span className="text-red-500 text-xs">{errors.documentNumber && (
+                                            <>{errors.documentNumber.message}</>
+                                        )}</span>
+                                    </div>
+                                    <div className="grid w-full gap-1.5">
+                                        <Label>
+                                            Tipo
+                                        </Label>
+                                        <Select
+                                            options={
+                                                Object.values(ProfessorEmploymentType).map((type) => ({
+                                                    value: type,
+                                                    label: MapProfessorEmploymentType[type]
+                                                }))
+                                            }
+                                            {...register("employmentType", {
+                                                required: {
+                                                    value: watch('role') === 'professor',
+                                                    message: "Tipo es requerido.",
+                                                },
+                                            })}
+                                            value={watch('employmentType') as any &&
+                                            {
+                                                value: watch('employmentType'),
+                                                label: MapProfessorEmploymentType[watch('employmentType') || ProfessorEmploymentType.FULL_TIME]
+                                            }
+                                            }
+                                            isDisabled={loading}
+                                            className="w-full col-span-3 z-[100]"
+                                            onChange={(option) => {
+                                                setValue('employmentType', option?.value)
+                                                setError('employmentType', {
+                                                    type: 'disabled'
+                                                })
+                                            }}
+                                        />
+                                        {errors.employmentType &&
+                                            <span className="text-red-600 text-xs">{errors.employmentType.message}</span>
+                                        }
+                                    </div>
+                                    <div className="grid w-full gap-1.5">
+                                        <div className='flex gap-1 items-center'>
+                                            <Label htmlFor="schoolId" className="">
+                                                Escuela
+                                            </Label>
+                                            {loadSchools && (
+                                                <Loader size={14} className="animate-spin text-blue-600" />
+                                            )}
+                                        </div>
+                                        <Select
+                                            options={
+                                                schools.map((school) => ({
+                                                    value: school.id,
+                                                    label: school.name
+                                                }))
+                                            }
+                                            {...register("schoolId", {
+                                                required: {
+                                                    value: watch('role') === 'professor',
+                                                    message: "Escuela es requerida.",
+                                                },
+                                            })}
+                                            value={watch('schoolId') as any &&
+                                                schools.find((school) => school.id === watch('schoolId')) &&
+                                            {
+                                                value: watch('schoolId'),
+                                                label: schools.find((school) => school.id === watch('schoolId'))?.name
+                                            }
+                                            }
+                                            isDisabled={loading || loadSchools}
+                                            className="w-full z-[99]"
+                                            onChange={(option) => {
+                                                setValue('schoolId', option.value)
+                                                setError('schoolId', {
+                                                    type: 'disabled'
+                                                })
+                                            }}
+                                        />
+                                        <span className="text-red-500 text-xs">{errors.schoolId && (
+                                            <>{errors.schoolId.message}</>
+                                        )}</span>
+                                    </div>
+                                </>
+                            )}
+                            {/* End Is Professor */}
+
                             <div className="flex flex-col items-start gap-2">
                                 <Label htmlFor="countries" className="text-right">
                                     País

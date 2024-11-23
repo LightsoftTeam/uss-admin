@@ -57,6 +57,12 @@ const routes = [
         hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     },
     {
+        path: ['/solicitudes-profesores'],
+        label: 'Solicitudes Profesores',
+        redirectTo: '/solicitudes-profesores',
+        hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
+    },
+    {
         path: ['/profesores'],
         label: 'Profesores',
         redirectTo: '/profesores',

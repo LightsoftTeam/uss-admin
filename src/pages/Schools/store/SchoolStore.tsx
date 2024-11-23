@@ -60,7 +60,7 @@ export const SchoolStore = create<State & Actions>((set) => ({
   setSchoolSelected(School, action) {
     const id = School?.id;
     const SchoolSelected = SchoolStore.getState().schools.find((School) => School.id === id);
-    set({ SchoolSelected, action, open: !!School?.id ?? false });
+    set({ SchoolSelected, action, open: !!id });
   },
   crtSchool: async (body) => {
     try {

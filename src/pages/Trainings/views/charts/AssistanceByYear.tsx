@@ -20,6 +20,8 @@ import {
 import { ProfessorParticipation, getProfessorParticipationBySemester } from "@/services/reports"
 import { SemesterStore } from "@/pages/Semesters/store/SemesterStore"
 import { Semester } from "@/services/semesters"
+import LoaderSemeter from "../../components/loaders/loader-semesters"
+import LoaderReport from "../../components/loaders/loader-report"
 let chartData = [
   { key: "attended", count: 0, fill: "hsl(var(--chart-1))" },
   { key: "pending", count: 0, fill: "hsl(var(--chart-3))" },
@@ -62,11 +64,11 @@ export function AssistanceByYear() {
   }
 
   if (loadingSemesters) {
-    return <div>Cargando semestres...</div>
+    return <LoaderSemeter />
   }
 
   if (loading) {
-    return <div>Cargando...</div>
+    return <LoaderReport />
   }
 
 
@@ -106,25 +108,24 @@ export function AssistanceByYear() {
               nameKey="key"
               innerRadius={60}
               outerRadius={80}
-              strokeWidth={15}
+              strokeWidth={0}
               label={
                 ({ cx, cy, midAngle, innerRadius, outerRadius, fill, payload }) => {
                   const RADIAN = Math.PI / 180
                   const radius = 25 + innerRadius + (outerRadius - innerRadius)
                   const x = cx + radius * Math.cos(-midAngle * RADIAN)
                   const y = cy + radius * Math.sin(-midAngle * RADIAN)
-
+                  // console.log({ payload, totalCountFullTime })
                   return (
                     <text
                       x={x}
                       y={y}
                       fill={fill}
-                      fontSize={12}
-                      textAnchor={x > cx ? "start" : "end"}
+                      fontSize={9}
+                      textAnchor="middle"
                       dominantBaseline="central"
                     >
-                      {/* {payload.key} */}
-                      {(payload.count / totalCount * 100).toFixed(2)}%
+                      {((payload.count / totalCount) * 100).toFixed(2)}%
                     </text>
                   )
                 }

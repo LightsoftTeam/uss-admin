@@ -1,10 +1,12 @@
 
 
 
-import { MapProfessorEmploymentType, Professor } from "@/services/professors";
+import { MapProfessorEmploymentType } from "@/services/professors";
+import { ProfessorsResume } from "@/services/reports";
+import { MapAttendanceStatus } from "@/services/trainings";
 import { ColumnDef } from "@tanstack/react-table";
 
-export const columns: ColumnDef<Professor>[] = [
+export const columns: ColumnDef<ProfessorsResume>[] = [
     {
         accessorKey: "Index",
         header: "N°",
@@ -39,6 +41,13 @@ export const columns: ColumnDef<Professor>[] = [
         header: "Tipo",
         cell(props) {
             return MapProfessorEmploymentType[props.row.original.employmentType]
+        },
+    },
+    {
+        accessorKey: "status",
+        header: "Estado",
+        cell(props) {
+            return MapAttendanceStatus[props.row.original.status]
         },
     },
 

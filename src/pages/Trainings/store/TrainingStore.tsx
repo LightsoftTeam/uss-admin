@@ -1,4 +1,4 @@
-import { Training, TrainingBodyRequest, createTraining, updateTraining, getTrainings, deleteTraining, MapTrainingModality, MapTrainingStatus, Participant, getParticipants, completeStatusOfParticipant, MapTypeTraining, Certificate, MapRoleInscription } from "@/services/trainings";
+import { Training, TrainingBodyRequest, createTraining, updateTraining, getTrainings, deleteTraining, MapTrainingModality, MapTrainingStatus, Participant, getParticipants, completeStatusOfParticipant, MapTypeTraining, Certificate, MapRoleInscription, getResourcesCredential, updateResource, downloadCertificates } from "@/services/trainings";
 import { ActionsTypes } from "@/types/general";
 import { ErrorType } from "@/utils/types";
 import { AxiosError } from "axios";
@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { create } from "zustand";
 import { TrainingErrorCode } from "../lib/error-codes";
 import { Competency, getCompetencys } from "@/services/competencies";
+import { ResourcesCredential } from '../../../services/trainings';
 
 interface TableTrainings {
   [key: string | number]: string | number | JSX.Element;
@@ -20,6 +21,7 @@ interface TableTrainings {
 }
 type State = {
   trainings: Training[];
+  resources: ResourcesCredential;
   competencies: Competency[];
   tags: string[];
   tableTrainings: TableTrainings[];
@@ -41,8 +43,10 @@ type Actions = {
   setOpen: (open: boolean) => void;
   getParticipantsByTraining: () => Promise<void>;
   downloadCertificate: (participant: Certificate) => Promise<void>;
+  downloadCertificates: () => Promise<void>;
   verifyAttendance: (participant: Participant) => Promise<void>;
   searchParticipants: (search: string) => void;
+  updateResource: (code: 'band' | 'bg', url: string) => Promise<void>;
 };
 
 const mapTrainingsToTableTrainings = (trainings: Training[], competencies: any): TableTrainings[] => {
@@ -58,8 +62,9 @@ const mapTrainingsToTableTrainings = (trainings: Training[], competencies: any):
   }));
 }
 
-export const TrainingStore = create<State & Actions>((set) => ({
+export const TrainingStore = create<State & Actions>()((set, get) => ({
   trainings: [],
+  resources: {} as ResourcesCredential,
   participantsDraft: [],
   competencies: [],
   tags: [],
@@ -74,10 +79,27 @@ export const TrainingStore = create<State & Actions>((set) => ({
       set({ loading: true });
       const competencies = await getCompetencys();
       const trainings = await getTrainings();
+      const resources = await getResourcesCredential();
       set({ trainings });
       set({ competencies });
+      set({ resources });
       const tableTrainings = mapTrainingsToTableTrainings(trainings, competencies);
       set({ tableTrainings });
+    } catch (error) {
+      console.error("Ocurrió un error inesperado, intente nuevamente", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
+  updateResource: async (code, url) => {
+    const resources = get().resources;
+    try {
+      set({ loading: true });
+      const obj = await updateResource(code, url);
+      console.log({ obj })
+      if (code === 'band') set({ resources: { bg: resources.bg, band: obj.band } });
+      if (code === 'bg') set({ resources: { bg: obj.bg, band: resources.band } });
+      toast.success("Recurso actualizado correctamente");
     } catch (error) {
       console.error("Ocurrió un error inesperado, intente nuevamente", error);
     } finally {
@@ -160,6 +182,22 @@ export const TrainingStore = create<State & Actions>((set) => ({
       set({ loading: false });
     }
   },
+  downloadCertificates: async () => {
+    const trainingSelected = TrainingStore.getState().trainingSelected;
+    if (!trainingSelected) {
+      toast.error("No se ha seleccionado una capacitación")
+      return;
+    };
+    try {
+      set({ loading: true });
+      await downloadCertificates(trainingSelected.id);
+      toast.success("Certificados generados correctamente");
+    } catch (error) {
+      console.error("Ocurrió un error inesperado, intente nuevamente", error);
+    } finally {
+      set({ loading: false });
+    }
+  },
   downloadCertificate: async (certificate: Certificate) => {
     try {
       set({ loading: true });
@@ -195,7 +233,7 @@ export const TrainingStore = create<State & Actions>((set) => ({
       const newParticipants = [...participants].map((p) =>
         p.id === participant.id ? {
           ...newParticipant,
-          professor: p.professor,
+          professor: p.user,
           roles: p.roles,
           executions: p.executions
         } : p
@@ -214,9 +252,9 @@ export const TrainingStore = create<State & Actions>((set) => ({
     const participants = TrainingStore.getState().participants;
     if (!participants) return;
     const filteredParticipants = [...participants].filter((participant) =>
-      participant.professor.email.toLowerCase().includes(search.toLowerCase()) ||
-      participant.professor.name.toLowerCase().includes(search.toLowerCase()) ||
-      participant.professor.documentNumber.toString().toLowerCase().includes(search.toLowerCase())
+      participant.user?.email.toLowerCase().includes(search.toLowerCase()) ||
+      participant.user?.name.toLowerCase().includes(search.toLowerCase()) ||
+      participant.user?.documentNumber?.toLowerCase().includes(search.toLowerCase())
     );
     set({ participantsDraft: filteredParticipants });
   },

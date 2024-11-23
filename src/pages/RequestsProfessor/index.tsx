@@ -5,7 +5,7 @@ import { User } from "@/services/users"
 import { DataTable } from "@/components/DataTable/DataTable"
 import { ExtraColumn } from "@/types/columns"
 import { RequestsProffesorStore } from "./store/UserStore"
-import { Eye } from "lucide-react"
+import { Check, Eye, Trash } from "lucide-react"
 
 const columns = [
     {
@@ -25,7 +25,7 @@ const columns = [
     },
 ];
 
-function ProfessorsPage() {
+function RequestsProffesorPage() {
     const { open, getData, tableUsers, loading, setUserSelected } = RequestsProffesorStore()
     useEffect(() => {
         getData();
@@ -42,6 +42,14 @@ function ProfessorsPage() {
                             onClick={() => setUserSelected(row, 'view')}>
                             <Eye className="text-blue-600 h-5 w-5" />
                         </Button>
+                        <Button className='bg-transparent shadow-none p-0 hover:bg-transparent border border-green-500 rounded-md h-7 w-7'
+                            onClick={async () => setUserSelected(row, 'accept')}>
+                            <Check className="text-green-600 h-5 w-5" />
+                        </Button>
+                        <Button className='bg-transparent shadow-none p-0 hover:bg-transparent border border-red-500 rounded-md h-7 w-7'
+                            onClick={async () => setUserSelected(row, 'reject')}>
+                            <Trash className="text-red-600 h-5 w-5" />
+                        </Button>
                     </div>
                 )
             }
@@ -52,7 +60,7 @@ function ProfessorsPage() {
     return (
         <main className="flex flex-col gap-4 p-4">
             <section className="">
-                <h1 className="text-2xl font-semibold">Listado de Profesores</h1>
+                <h1 className="text-2xl font-semibold">Listado de Solicitudes para Docente</h1>
             </section>
 
             <section className="flex flex-row justify-between items-center gap-2">
@@ -85,4 +93,4 @@ function ProfessorsPage() {
     )
 }
 
-export default ProfessorsPage
+export default RequestsProffesorPage

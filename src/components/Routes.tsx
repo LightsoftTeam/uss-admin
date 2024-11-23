@@ -18,6 +18,7 @@ import SearchByDocument from '@/pages/Trainings/components/searchByDocument/page
 import StatiticsPage from '@/pages/Trainings/views/StatiticsPage'
 import SemestersPage from '@/pages/Semesters'
 import StogarePage from '@/pages/Storage'
+import RequestsProffesorPage from '@/pages/RequestsProfessor'
 
 const PostPage = () => {
   return (
@@ -75,6 +76,13 @@ const routes = [
     redirectTo: '/escuelas',
     hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
     component: SchoolsPage,
+  },
+  {
+    path: '/solicitudes-profesores',
+    label: 'Solicitudes Profesores',
+    redirectTo: '/solicitudes-profesores',
+    hasAccess: (user: User) => user.role === RoleUser.ADMIN || user.role === RoleUser.EVENT_MANAGER,
+    component: RequestsProffesorPage,
   },
   {
     path: 'profesores',

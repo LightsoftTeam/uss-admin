@@ -11,17 +11,17 @@ export const columns: ColumnDef<Participant>[] = [
         accessorKey: "professor",
         header: "Participante",
         cell(props) {
-            const { professor } = props.row.original
+            const { user } = props.row.original
             return (
                 <div className="flex flex-col gap-[1px]">
                     <span className="text-base font-semibold">
-                        {professor.name}
+                        {user.name}
                     </span>
                     <span className="text-sm font-normal">
-                        DNIº {professor.documentNumber}
+                        DNIº {user.documentNumber}
                     </span>
                     <span className="text-xs font-normal">
-                        {professor.email}
+                        {user.email}
                     </span>
                 </div>
             )

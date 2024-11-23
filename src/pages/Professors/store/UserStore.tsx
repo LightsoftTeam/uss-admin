@@ -1,4 +1,4 @@
-import { User, UserBodyRequest, createUser, updateUser, getUsers, deleteUser, getCountries, Country } from "@/services/users";
+import { User, UserBodyRequest, createUser, updateUser, getUsers, deleteUser, Country, changeRoleRequest } from "@/services/users";
 import { ActionsTypes } from "@/types/general";
 import { toast } from "sonner";
 import { create } from "zustand";
@@ -29,6 +29,7 @@ type Actions = {
   crtUser: (body: UserBodyRequest) => Promise<void>;
   updUser: (id: string, body: UserBodyRequest) => Promise<void>;
   delUser: (id: string) => Promise<void>;
+  changeRoleRequest: (action: 'accept' | 'reject') => Promise<void>;
   setLoading: (loading: boolean) => void;
   setOpen: (open: boolean) => void;
 };
@@ -64,7 +65,7 @@ const mapUsersToTableUsers = (users: User[]): TableUsers[] => {
   }));
 }
 
-export const UserStore = create<State & Actions>((set) => ({
+export const RequestsProffesorStore = create<State & Actions>()((set, get) => ({
   tags: [],
   users: [],
   countries: [],
@@ -76,9 +77,8 @@ export const UserStore = create<State & Actions>((set) => ({
   getData: async () => {
     try {
       set({ loading: true });
-      const countries = await getCountries();
-      const users = await getUsers();
-      set({ users, countries });
+      const users = await getUsers('professor');
+      set({ users });
       const tableUsers = mapUsersToTableUsers(users);
       set({ tableUsers });
     } catch (error) {
@@ -88,15 +88,15 @@ export const UserStore = create<State & Actions>((set) => ({
     }
   },
   setUserSelected(user, action) {
-    const userSelected = UserStore.getState().users.find((User) => User.id === user?.id);
-    set({ userSelected, action, open: !!user?.id});
+    const userSelected = get().users.find((User) => User.id === user?.id);
+    set({ userSelected, action, open: !!user?.id });
   },
   crtUser: async (body) => {
     try {
       set({ loading: true });
       const newUser = await createUser(body);
-      set({ users: [newUser, ...UserStore.getState().users] });
-      set({ tableUsers: mapUsersToTableUsers(UserStore.getState().users) });
+      set({ users: [newUser, ...get().users] });
+      set({ tableUsers: mapUsersToTableUsers(get().users) });
       set({ open: false });
     } catch (error) {
       console.error("Ocurrió un error inesperado, intente nuevamente", error);
@@ -109,9 +109,9 @@ export const UserStore = create<State & Actions>((set) => ({
       set({ loading: true });
       const updatedUser = await updateUser(id, {
         ...body,
-        password: body.password  === "" ? (undefined as any) : body.password
+        password: body.password === "" ? (undefined as any) : body.password
       });
-      const updatedUsers = UserStore.getState().users.map((User) =>
+      const updatedUsers = get().users.map((User) =>
         User.id === updatedUser.id ? updatedUser : User
       );
       set({ users: updatedUsers });
@@ -127,7 +127,7 @@ export const UserStore = create<State & Actions>((set) => ({
     try {
       set({ loading: true });
       await deleteUser(id);
-      const updatedUsers = UserStore.getState().users.filter((User) => User.id !== id);
+      const updatedUsers = get().users.filter((User) => User.id !== id);
       set({ users: updatedUsers });
       set({ tableUsers: mapUsersToTableUsers(updatedUsers) });
       set({ open: false });
@@ -138,6 +138,25 @@ export const UserStore = create<State & Actions>((set) => ({
       set({ loading: false });
     }
   },
+
+  changeRoleRequest: async (action) => {
+    try {
+      set({ loading: true });
+      const userSelected = get().userSelected;
+      if (!userSelected) return;
+      await changeRoleRequest(userSelected.id, action);
+      const updatedUsers = get().users.filter((User) => User.id !== userSelected.id);
+      set({ users: updatedUsers });
+      set({ tableUsers: mapUsersToTableUsers(updatedUsers) });
+      set({ open: false });
+    } catch (error) {
+      console.error("Ocurrió un error inesperado, intente nuevamente", error);
+      toast.error("Ocurrió un error inesperado, intente nuevamente");
+    } finally {
+      set({ loading: false });
+    }
+  },
+
   setLoading: (loading) => set({ loading }),
   setOpen: (open) => set({ open }),
 }));

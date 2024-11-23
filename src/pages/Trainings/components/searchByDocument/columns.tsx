@@ -32,7 +32,7 @@ export const columns: ColumnDef<SingleTraining>[] = [
         header: "Estado",
         cell: (props) => {
             const { participant } = props.row.original
-            return participant.certificates.length ? "Aprobado" : "Pendiente"
+            return participant.certificates?.length ? "Aprobado" : "Pendiente"
         },
     },
     {
@@ -41,7 +41,7 @@ export const columns: ColumnDef<SingleTraining>[] = [
             const { participant } = row.original
             const { downloadCertificate } = SearchTrainingStore()
 
-            if (!participant.certificates.length) return <></>
+            if (!participant.certificates?.length) return <></>
 
             return (
                 // Descargar certificado
