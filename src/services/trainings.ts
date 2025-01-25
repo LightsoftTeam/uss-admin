@@ -109,7 +109,7 @@ export interface TrainingBodyRequest {
   type: TypeTraining;
   certificateOrganizer: string;
   certificateBackgroundUrl?: string;
-  certificateSignatureUrl?: string;
+  certificateSignatureUrls?: string[];
   certificateEmisionDate?: string;
   executions: Partial<Execution>[];
   credentialBackgroundUrl?: string;

@@ -82,7 +82,7 @@ function ModalTraining() {
         }
     }, [])
 
-    const handleOnChangeImageInput = async (e: React.ChangeEvent<HTMLInputElement>, path: 'certificateBackgroundUrl' | 'certificateSignatureUrl' | 'credentialBackgroundUrl') => {
+    const handleOnChangeImageInput = async (e: React.ChangeEvent<HTMLInputElement>, path: 'certificateBackgroundUrl' | 'certificateSignatureUrls' | 'credentialBackgroundUrl') => {
         const file = e.target.files![0];
         try {
             setLoading(true);
@@ -692,29 +692,46 @@ function ModalTraining() {
                                         )}
                                     </div>
                                     <div className="flex flex-col items-start gap-2">
-                                        <Label htmlFor="signature" className="text-right">
-                                            Firma
+                                        <Label htmlFor="certificateSignatureUrls" className="text-right">
+                                            Firmas (máx 2)
                                         </Label>
-                                        <Input disabled={loading} id="signature" type="file" name="media" onChange={
-                                            (e) => handleOnChangeImageInput(e, 'certificateSignatureUrl')
-                                        } />
                                         <Input
+                                            id="certificateSignatureUrls"
                                             disabled={loading}
-                                            value={watch('certificateSignatureUrl') || ''}
-                                            className="hidden"
-                                            {...register('certificateSignatureUrl', {
-                                                required: {
-                                                    value: true,
-                                                    message: 'Imagen de firma es requerida.'
-                                                },
-                                            })}
+                                            className="col-span-3"
+                                            type="file"
+                                            multiple
+                                            accept="image/png, image/jpeg"
+                                            onChange={async (e) => {
+                                                const files = e.target.files;
+                                                if (!files) return;
+                                                if (files.length > 2) {
+                                                    toast.error('Sólo se permiten 2 firmas');
+                                                    return;
+                                                }
+                                                try {
+                                                    setLoading(true);
+                                                    const urls = await Promise.all(Array.from(files).map(async (file) => {
+                                                        const { url } = await uploadFile(file);
+                                                        return url;
+                                                    }))
+                                                    setValue('certificateSignatureUrls', urls)
+                                                } catch (error) {
+                                                    toast.error('Ocurrió un error inesperado, intente nuevamente');
+                                                    // limpiar el input
+                                                    e.target.value = '';
+                                                } finally {
+                                                    setLoading(false);
+                                                }
+                                            }}
                                         />
-                                        {errors.certificateSignatureUrl &&
-                                            <span className="text-red-600 text-xs">{errors.certificateSignatureUrl.message}</span>
-                                        }
-                                        {watch('certificateSignatureUrl') && (
-                                            <img src={watch('certificateSignatureUrl')} alt="background" className="h-24 w-24 object-contain" />
-                                        )}
+                                        <div className="flex gap-2">
+                                            {watch('certificateSignatureUrls')?.map((url, index) => (
+                                                <div key={index} className="flex  gap-2 items-center">
+                                                    <img src={url} alt="" className="h-12 w-12 object-contain" />
+                                                </div>
+                                            ))}
+                                        </div>
                                     </div>
                                     <div className="flex flex-col items-start gap-2">
                                         <Label htmlFor="date" className="text-right">
