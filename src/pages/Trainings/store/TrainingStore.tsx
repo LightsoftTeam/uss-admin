@@ -1,4 +1,4 @@
-import { Training, TrainingBodyRequest, createTraining, updateTraining, getTrainings, deleteTraining, MapTrainingModality, MapTrainingStatus, Participant, getParticipants, completeStatusOfParticipant, MapTypeTraining, Certificate, MapRoleInscription, getResourcesCredential, updateResource, downloadCertificates } from "@/services/trainings";
+import { Training, TrainingBodyRequest, createTraining, updateTraining, getTrainings, deleteTraining, MapTrainingModality, MapTrainingStatus, Participant, getParticipants, completeStatusOfParticipant, MapTypeTraining, MapRoleInscription, getResourcesCredential, updateResource, downloadCertificates, generateCertificate, RoleInscription } from "@/services/trainings";
 import { ActionsTypes } from "@/types/general";
 import { ErrorType } from "@/utils/types";
 import { AxiosError } from "axios";
@@ -42,7 +42,11 @@ type Actions = {
   setLoading: (loading: boolean) => void;
   setOpen: (open: boolean) => void;
   getParticipantsByTraining: () => Promise<void>;
-  downloadCertificate: (participant: Certificate) => Promise<void>;
+  downloadCertificate: ({
+    trainingId,
+    participantId,
+    role,
+  }: any) => Promise<void>
   downloadCertificates: () => Promise<void>;
   verifyAttendance: (participant: Participant) => Promise<void>;
   searchParticipants: (search: string) => void;
@@ -198,20 +202,28 @@ export const TrainingStore = create<State & Actions>()((set, get) => ({
       set({ loading: false });
     }
   },
-  downloadCertificate: async (certificate: Certificate) => {
+  downloadCertificate: async ({
+    trainingId,
+    participantId,
+    role,
+  }) => {
     try {
       set({ loading: true });
-      if (!certificate) return;
-      const response = await fetch(certificate?.url);
-      console.log({ response })
-      const blob = await response.blob();
+      if (!trainingId || !participantId || !role) return;
+      const blob = await generateCertificate({
+        trainingId,
+        participantId,
+        role,
+      })
+      // console.log({ response })
+      // const blob = await response.blob();
 
       // Crea una URL para el Blob y descarga el archivo
       const urlBlob = window.URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.style.display = "none";
       a.href = urlBlob;
-      a.download = `Certificado ${MapRoleInscription[certificate.role]}.pdf`; // Nombre del archivo descargado
+      a.download = `Certificado ${MapRoleInscription[role as RoleInscription]}.pdf`; // Nombre del archivo descargado
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(urlBlob);

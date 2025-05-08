@@ -254,3 +254,20 @@ export const getTrainingsByDocument = async (
   );
   return data;
 };
+
+export const generateCertificate = async ({
+  trainingId,
+  participantId,
+  role,
+}: any): Promise<Blob> => {
+  const { data } = await api.post<Blob>(
+    `/training/${trainingId}/participants/${participantId}/generate-certificate`,
+    {
+      role,
+    },
+    {
+      responseType: "blob",
+    }
+  );
+  return data;
+};
